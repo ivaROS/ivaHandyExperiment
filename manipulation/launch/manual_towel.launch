@@ -1,0 +1,10 @@
+<launch>
+
+  <node name="manual_towel"
+        pkg="pr2_moveit_tutorials"
+        type="manual_towel"
+        respawn="false" output="screen">
+    <rosparam command="load"
+              file="$(find finalasm_moveit_config4)/config/kinematics.yaml"/>
+  </node>
+</launch>

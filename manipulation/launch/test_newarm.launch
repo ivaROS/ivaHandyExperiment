@@ -1,0 +1,10 @@
+<launch>
+
+  <node name="test_newarm"
+        pkg="pr2_moveit_tutorials"
+        type="test_newarm"
+        respawn="false" output="screen">
+    <rosparam command="load"
+              file="$(find finalarm_dualmotor_moveit_config)/config/kinematics.yaml"/>
+  </node>
+</launch>

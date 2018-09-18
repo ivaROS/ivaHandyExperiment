@@ -1,0 +1,10 @@
+<launch>
+
+  <node name="manual_drawer"
+        pkg="pr2_moveit_tutorials"
+        type="manual_drawer"
+        respawn="false" output="screen">
+    <rosparam command="load"
+              file="$(find finalasm_moveit_config4)/config/kinematics.yaml"/>
+  </node>
+</launch>

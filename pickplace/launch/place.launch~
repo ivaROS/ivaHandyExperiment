@@ -1,0 +1,9 @@
+<launch>
+  <node name="place"
+        pkg="handy_experiment"
+        type="place"
+        respawn="false" output="screen">
+    <rosparam command="load"
+              file="$(find finalarm_moveit_config)/config/kinematics.yaml"/>
+  </node>
+</launch>
