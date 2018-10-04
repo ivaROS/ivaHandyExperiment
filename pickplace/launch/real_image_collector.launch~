@@ -1,9 +1,0 @@
-<launch>
-  <node name="real_image_collector"
-        pkg="handy_experiment"
-        type="real_image_collector"
-        respawn="false" output="screen">
-    <rosparam command="load"
-              file="$(find finalarm_moveit_config)/config/kinematics.yaml"/>
-  </node>
-</launch>
