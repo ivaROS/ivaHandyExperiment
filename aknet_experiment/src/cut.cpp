@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 
     addObject2Scene(group_arm, planning_scene_interface ,collision_object_publisher);
     // add washing machine into the planning scene
-    addBoxObjects(group_arm, planning_scene_interface ,collision_object_publisher, "box", 0.27, -0.23, 0.06, 0.18, 0.18, 0.23);
+    addBoxObjects(group_arm, planning_scene_interface ,collision_object_publisher, "box", XX, XX, XX, XX, XX, XX);
   
     /*****************************************************************
     *                        List stored poses                       *
@@ -221,9 +221,9 @@ int main(int argc, char **argv)
 void cut(moveit::planning_interface::MoveGroup &group, double x_g, double y_g, double z_g, double angle_g, double x_c, double y_c, double x_1, double y_1, double x_2, double y_2, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9) {
     // predefined the position of the string
     double x_string, y_string, z_string;
-    x_string = 0.35;
-    y_string = -0.15;
-    z_string = 0.065 + 0.03;
+    x_string = XX;
+    y_string = XX;
+    z_string = XX;
 
 	/**************************************************
 	*               Go to grasping position           *

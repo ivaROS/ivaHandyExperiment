@@ -207,12 +207,12 @@ int main(int argc, char **argv)
 
 
             // add the wall into the planning scene
-            addBoxObjects(group_arm, planning_scene_interface ,collision_object_publisher, "box", 0.4625, -0.235, 0.055, 0.0, 0.155, 0.19, 0.20); //0.4625
+            addBoxObjects(group_arm, planning_scene_interface ,collision_object_publisher, "box", XX, XX, XX, XX, XX, XX, XX); //0.4625
 
             pound(group_arm, planning_scene_interface ,collision_object_publisher, x_g, y_g, z_g, angle_g, x_p, y_p, x_1, y_1, x_2, y_2, pub_7, pub_8, pub_9);
 
 
-            removeBoxObjects(group_arm, planning_scene_interface ,collision_object_publisher, "box", 0.4625, -0.235, 0.055, 0.0, 0.155, 0.19, 0.20);
+            removeBoxObjects(group_arm, planning_scene_interface ,collision_object_publisher, "box", XX, XX, XX, XX, XX, XX, XX);
 
             gotoNamedTarget(group_arm, target, 0);
 
@@ -226,32 +226,10 @@ int main(int argc, char **argv)
 }	
 
 void pound(moveit::planning_interface::MoveGroup &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher, double x_g, double y_g, double z_g, double angle_g, double x_p, double y_p, double x_1, double y_1, double x_2, double y_2, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9) {
-    double x_g, y_g, z_g, angle_g;
-    std::cout<<"Input grasp position and rotation: x, y, z, angle"<<std::endl;
-    std::cin >> x_g;
-    std::cin >> y_g;
-    std::cin >> z_g;
-    std::cin >> angle_g;
-
-    double x_p, y_p;
-    std::cout<<"Input pound operating position: x, y"<<std::endl;
-    std::cin >> x_p;
-    std::cin >> y_p;
-
-    double x_1, y_1;
-    std::cout<<"Input pound keypoint 1 position: x, y"<<std::endl;
-    std::cin >> x_1;
-    std::cin >> y_1;
-
-    double x_2, y_2;
-    std::cout<<"Input pound keypoint 2 position: x, y"<<std::endl;
-    std::cin >> x_2;
-    std::cin >> y_2;
-
     double x_nail, y_nail, z_nail;
-    x_nail = 0.4;
-    y_nail = -0.15;
-    z_nail = 0.072 + 0.03 + 0.0125; // z position of nail, offset for gravity, depth for hammer head
+    x_nail = XX;
+    y_nail = XX;
+    z_nail = XX; // z position of nail, offset for gravity, depth for hammer head
 
 
 	/**************************************************
@@ -443,10 +421,6 @@ void pound(moveit::planning_interface::MoveGroup &group, moveit::planning_interf
     pose_pound.orientation.y = qat.y();
     pose_pound.orientation.z = qat.z();
     pose_pound.orientation.w = qat.w();
-
-    std::cout<<pose_pound<<std::endl;
-    std::cout<<rot_angle<<std::endl;
-
 
     // set target pose
     ROS_INFO("Move to pound place");

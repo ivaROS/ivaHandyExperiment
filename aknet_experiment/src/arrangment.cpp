@@ -310,9 +310,9 @@ void wgrasp_transport(moveit::planning_interface::MoveGroup &group, moveit::plan
 
     ROS_INFO("Move to washing machine");
     geometry_msgs::Pose target_pose_wm1;
-    target_pose_wm1.position.x = 0.04;
-    target_pose_wm1.position.y = -0.26;
-    target_pose_wm1.position.z = 0.25;
+    target_pose_wm1.position.x = XX;
+    target_pose_wm1.position.y = XX;
+    target_pose_wm1.position.z = XX;
     target_pose_wm1.orientation.x = 0.50;
     target_pose_wm1.orientation.y = 0.50;
     target_pose_wm1.orientation.z = 0.50;
