@@ -1,0 +1,10 @@
+<launch>
+
+  <node name="dynamic_grasp"
+        pkg="handy_experiment"
+        type="dynamic_grasp"
+        respawn="false" output="screen">
+    <rosparam command="load"
+              file="$(find finalarm_moveit_config)/config/kinematics.yaml"/>
+  </node>
+</launch>
