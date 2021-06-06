@@ -84,12 +84,12 @@ void closeGrabber(double open_width, ros::Publisher &pub_8, ros::Publisher &pub_
 double rotateGripper(ros::Publisher &pub_7, double angle);
 void joint_state_handler(const sensor_msgs::JointState::ConstPtr& msg);
 void detection_handler(const std_msgs::Float64MultiArray::ConstPtr& msg);
-const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGroup &group);
-void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string target, bool constraint_on);
-void addObject2Scene(moveit::planning_interface::MoveGroup &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher);
-void getConstraint(moveit::planning_interface::MoveGroup &group, std::string target);
+const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGroupInterface &group);
+void gotoNamedTarget(moveit::planning_interface::MoveGroupInterface &group, std::string target, bool constraint_on);
+void addObject2Scene(moveit::planning_interface::MoveGroupInterface &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher);
+void getConstraint(moveit::planning_interface::MoveGroupInterface &group, std::string target);
 void grasp(moveit::planning_interface::MoveGroupInterface &group, double x, double y, double z, double angle, double open_width, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9);
-void jacobian_move_forward(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_1, ros::Publisher &pub_2, ros::Publisher &pub_3, ros::Publisher &pub_4, ros::Publisher &pub_5, ros::Publisher &pub_6, ros::Publisher &pub_7, double new_x, double new_y, double new_z);
+void jacobian_move_forward(moveit::planning_interface::MoveGroupInterface &group, ros::Publisher &pub_1, ros::Publisher &pub_2, ros::Publisher &pub_3, ros::Publisher &pub_4, ros::Publisher &pub_5, ros::Publisher &pub_6, ros::Publisher &pub_7, double new_x, double new_y, double new_z);
 
 int main(int argc, char **argv)
 {
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
     spinner.start();
 
     // kinematic_state & kinematic_model loading & planner
-    moveit::planning_interface::MoveGroup group_arm("arm");
+    moveit::planning_interface::MoveGroupInterface group_arm("arm");
     // moveit::planning_interface::MoveGroup group_actuator("arm4_full");
     group_arm.setPlannerId("BKPIECEkConfigDefault");//ForageRRTkConfigDefault//LBKPIECEkConfigDefault//RRTstarkConfigDefault//BKPIECEkConfigDefault//RRTstarkConfigDefault
     // relationship is as follow
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
     return 0;
 }	
 
-void jacobian_move_forward(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_1, ros::Publisher &pub_2, ros::Publisher &pub_3, ros::Publisher &pub_4, ros::Publisher &pub_5, ros::Publisher &pub_6, ros::Publisher &pub_7, double new_x, double new_y, double new_z){
+void jacobian_move_forward(moveit::planning_interface::MoveGroupInterface &group, ros::Publisher &pub_1, ros::Publisher &pub_2, ros::Publisher &pub_3, ros::Publisher &pub_4, ros::Publisher &pub_5, ros::Publisher &pub_6, ros::Publisher &pub_7, double new_x, double new_y, double new_z){
     /*****************************************************************
     *                   Define and Initialize Objects                *
     *****************************************************************/
@@ -403,7 +403,7 @@ void grasp(moveit::planning_interface::MoveGroupInterface &group, double x, doub
     // set target pose
     group.setPoseTarget(target_pose_pickup);
     // plan
-    moveit::planning_interface::MoveGroup::Plan my_plan;
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
     // bool success = group.plan(my_plan); MOVEIT_EDIT
     moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
     //compensate_slark
@@ -461,7 +461,7 @@ void grasp(moveit::planning_interface::MoveGroupInterface &group, double x, doub
         trajectory_down.joint_trajectory.points[i].positions[3] +=  (0.2 * i / trajectory_down.joint_trajectory.points.size());
     }
 
-    moveit::planning_interface::MoveGroup::Plan plan_down;
+    moveit::planning_interface::MoveGroupInterface::Plan plan_down;
     plan_down.trajectory_ = trajectory_down;
     group.execute(plan_down);
 
@@ -499,7 +499,7 @@ void grasp(moveit::planning_interface::MoveGroupInterface &group, double x, doub
         trajectory_up.joint_trajectory.points[i].positions[3] +=  (0.3 * i / trajectory_up.joint_trajectory.points.size());
     }
 
-    moveit::planning_interface::MoveGroup::Plan plan_up;
+    moveit::planning_interface::MoveGroupInterface::Plan plan_up;
     plan_up.trajectory_ = trajectory_up;
     group.execute(plan_up);
     mutex_traj();
@@ -532,7 +532,7 @@ void detection_handler(const std_msgs::Float64MultiArray::ConstPtr& msg){
     }
 }
 
-const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGroup &group){
+const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGroupInterface &group){
     // list of all stored pose name in SRDF 
     const std::vector<std::string> namedTargets = group.getNamedTargets();
     std::cout<<"stored position in SRDF: "<<std::endl;
@@ -544,7 +544,7 @@ const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGr
     return namedTargets;
 }
 
-void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string target, bool constraint_on){
+void gotoNamedTarget(moveit::planning_interface::MoveGroupInterface &group, std::string target, bool constraint_on){
     ROS_INFO("TASK: Go to %s pose", target.c_str());
 
     // get joint values of stored pose by name
@@ -559,7 +559,7 @@ void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string t
     if(constraint_on) getConstraint(group, target);
 
     // plan
-    moveit::planning_interface::MoveGroup::Plan my_plan;
+    moveit::planning_interface::MoveGroupInterface::Plan my_plan;
     group.setJointValueTarget(group_variable_values);
     // bool success = group.plan(my_plan); MOVEIT_EDIT
     moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
@@ -589,7 +589,7 @@ void mutex_traj(){
     mutex = 0;
 }
 
-void addObject2Scene(moveit::planning_interface::MoveGroup &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher){
+void addObject2Scene(moveit::planning_interface::MoveGroupInterface &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher){
     /* Define the object message */
     moveit_msgs::CollisionObject object;
 
@@ -635,7 +635,7 @@ void addObject2Scene(moveit::planning_interface::MoveGroup &group, moveit::plann
 
 }
 
-void getConstraint(moveit::planning_interface::MoveGroup &group, std::string target){
+void getConstraint(moveit::planning_interface::MoveGroupInterface &group, std::string target){
     ROS_INFO("get constraints");
 
     // switch wont take string
