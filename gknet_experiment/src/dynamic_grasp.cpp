@@ -88,7 +88,7 @@ const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGr
 void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string target, bool constraint_on);
 void addObject2Scene(moveit::planning_interface::MoveGroup &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher);
 void getConstraint(moveit::planning_interface::MoveGroup &group, std::string target);
-void grasp(moveit::planning_interface::MoveGroupInterface &group, double x, double y, double z, double angle, double open_width, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9);
+void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, double z, double angle, double open_width, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9);
 void jacobian_move_forward(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_1, ros::Publisher &pub_2, ros::Publisher &pub_3, ros::Publisher &pub_4, ros::Publisher &pub_5, ros::Publisher &pub_6, ros::Publisher &pub_7, double new_x, double new_y, double new_z);
 
 int main(int argc, char **argv)
@@ -382,7 +382,7 @@ void jacobian_move_forward(moveit::planning_interface::MoveGroup &group, ros::Pu
     pub_7.publish(val_7);  
 }
 
-void grasp(moveit::planning_interface::MoveGroupInterface &group, double x, double y, double z, double angle, double open_width, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9) {
+void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, double z, double angle, double open_width, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9) {
     /**************************************************
     *               Go to grasping position           *
     ***************************************************/
