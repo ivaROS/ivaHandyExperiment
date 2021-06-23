@@ -67,6 +67,7 @@
 
 bool mutex = 0;
 std::vector<double> current_joint_values;
+std::vector<double> estimated_joint_values;
 std::vector<double> detection_result;
 const double gripper_open_value = -0.7; //open value of 8th motor
 const double gripper_close_value = 0.1; //close value of 8th motor
@@ -82,6 +83,7 @@ void openGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9);
 void closeGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9);
 double rotateGripper(ros::Publisher &pub_7, double angle);
 void joint_state_handler(const sensor_msgs::JointState::ConstPtr& msg);
+void est_joint_state_handler(const sensor_msgs::JointState::ConstPtr& msg); // updating estimated pose
 void detection_handler(const std_msgs::Float64MultiArray::ConstPtr& msg);
 const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGroup &group);
 void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string target, bool constraint_on);
@@ -108,6 +110,7 @@ int main(int argc, char **argv)
     ros::Publisher pub_8 = node_handle.advertise<std_msgs::Float64>("/finalarm_position_controller_8/command", 1, true);
     ros::Publisher pub_9 = node_handle.advertise<std_msgs::Float64>("/finalarm_position_controller_9/command", 1, true);
     ros::Subscriber sub_multi_joint_states = node_handle.subscribe<sensor_msgs::JointState>("/joint_states", 1, joint_state_handler);
+    ros::Subscriber sub_est_joint_states = node_handle.subscribe<sensor_msgs::JointState>("/estimated/joint_states", 1, est_joint_state_handler);
     ros::Subscriber sub_endtime = node_handle.subscribe<std_msgs::Bool>("/finalarm_joint_trajectory_action_controller/mutex", 5, traj_end_mutex);
     ros::Subscriber sub_detection = node_handle.subscribe<std_msgs::Float64MultiArray>("/result", 1, detection_handler);
 
@@ -271,8 +274,9 @@ void jacobian_move_forward(moveit::planning_interface::MoveGroup &group, ros::Pu
     *****************************************************************/
     robot_state::RobotStatePtr kinematic_state = group.getCurrentState();
     const robot_state::JointModelGroup* joint_model_group = group.getCurrentState()->getRobotModel()->getJointModelGroup(group.getName());
+    kinematic_state->setJointGroupPositions(joint_model_group, estimated_joint_values);
 
-    initialJoints << current_joint_values[0], current_joint_values[1], current_joint_values[2], current_joint_values[3], current_joint_values[4], current_joint_values[5], current_joint_values[6];
+    initialJoints << estimated_joint_values[0], estimated_joint_values[1], estimated_joint_values[2], estimated_joint_values[3], estimated_joint_values[4], estimated_joint_values[5], estimated_joint_values[6];
     const Eigen::Affine3d &end_effector_state = kinematic_state->getGlobalLinkTransform("link_eef");
     initialPose << end_effector_state.translation(), 0, -M_PI, 0;
     Eigen::Matrix3d initialRot;
@@ -376,6 +380,17 @@ void jacobian_move_forward(moveit::planning_interface::MoveGroup &group, ros::Pu
     pub_5.publish(val_5);
     pub_6.publish(val_6);
     pub_7.publish(val_7);  
+}
+
+// CORRECTION STUFF
+void est_joint_state_handler(const sensor_msgs::JointState::ConstPtr& msg)
+{
+    estimated_joint_values.clear();
+    // the first six joints may be camera state estimation, which is not needed for the correction
+    // If camera is being estimated, initialize i = 6, otherwise i = 0
+    for(std::size_t i = 6; i < msg->position.size(); ++i) { 
+        estimated_joint_values.push_back(msg->position[i]);
+    }
 }
 
 void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, double z, double angle, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9) {
