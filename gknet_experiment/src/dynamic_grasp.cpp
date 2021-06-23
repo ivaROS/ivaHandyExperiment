@@ -69,7 +69,7 @@ bool mutex = 0;
 std::vector<double> current_joint_values;
 std::vector<double> estimated_joint_values;
 std::vector<double> detection_result;
-const double gripper_open_value = -0.7; //open value of 8th motor
+const double gripper_open_value = -0.45; //open value of 8th motor
 const double gripper_close_value = 0.1; //close value of 8th motor
 const double gripper_giant_close_value = 0.0;
 const double gripper_slight_close_value = 0.1;
@@ -80,7 +80,8 @@ const double gripper_extreme_close_value = 0.4;
 void mutex_traj();
 void traj_end_mutex(const std_msgs::Bool::ConstPtr& msg);
 void openGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9);
-void closeGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9);
+void open_gripper_w_width(double width, ros::Publisher &pub_8, ros::Publisher &pub_9);
+void closeGrabber(double open_width, ros::Publisher &pub_8, ros::Publisher &pub_9);
 double rotateGripper(ros::Publisher &pub_7, double angle);
 void joint_state_handler(const sensor_msgs::JointState::ConstPtr& msg);
 void est_joint_state_handler(const sensor_msgs::JointState::ConstPtr& msg); // updating estimated pose
@@ -89,7 +90,7 @@ const std::vector<std::string> listNamedPoses(moveit::planning_interface::MoveGr
 void gotoNamedTarget(moveit::planning_interface::MoveGroup &group, std::string target, bool constraint_on);
 void addObject2Scene(moveit::planning_interface::MoveGroup &group, moveit::planning_interface::PlanningSceneInterface &planning_scene_interface, ros::Publisher &collision_object_publisher);
 void getConstraint(moveit::planning_interface::MoveGroup &group, std::string target);
-void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, double z, double angle, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9);
+void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, double z, double angle, double open_width, ros::Publisher &pub_7,ros::Publisher &pub_8, ros::Publisher &pub_9);
 void jacobian_move_forward(moveit::planning_interface::MoveGroup &group, ros::Publisher &pub_1, ros::Publisher &pub_2, ros::Publisher &pub_3, ros::Publisher &pub_4, ros::Publisher &pub_5, ros::Publisher &pub_6, ros::Publisher &pub_7, double new_x, double new_y, double new_z);
 
 int main(int argc, char **argv)
@@ -194,11 +195,12 @@ int main(int argc, char **argv)
     else target = "JoyStick";
     gotoNamedTarget(group_arm, target, 0);
 
-    double x, y, z, angle;
+    double x, y, z, angle, open_width;
     x = 0;
     y = 0;
     z = 0;
     angle = 0;
+    open_width = 0.03;
     while (1){
         if (detection_result.size() != 0){
             // use Jacobian to move forward
@@ -216,8 +218,10 @@ int main(int argc, char **argv)
                 y = detection_result[1];
                 z = detection_result[2];
                 angle = detection_result[3];
+                open_width = detection_result[4];
 
-                grasp(group_arm, x, y, z, angle, pub_7, pub_8, pub_9);
+                // move to pick bin to grasp the target object
+                grasp(group_arm, x, y, z, angle, open_width, pub_7, pub_8, pub_9);
                 gotoNamedTarget(group_arm, target, 0);
                 break;
             }
@@ -393,19 +397,20 @@ void est_joint_state_handler(const sensor_msgs::JointState::ConstPtr& msg)
     }
 }
 
-void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, double z, double angle, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9) {
-	/**************************************************
-	*               Go to grasping position           *
-	***************************************************/
-	ROS_INFO("Go to Grasping Position");
-	geometry_msgs::Pose target_pose_pickup;
+
+void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, double z, double angle, double open_width, ros::Publisher &pub_7, ros::Publisher &pub_8, ros::Publisher &pub_9) {
+    /**************************************************
+    *               Go to grasping position           *
+    ***************************************************/
+    ROS_INFO("Go to Grasping Position");
+    geometry_msgs::Pose target_pose_pickup;
 
     target_pose_pickup.position.x = x;//0.4;
     target_pose_pickup.position.y = y;//0.0;
-    target_pose_pickup.position.z = z;//0.2;, input actual Z of object instead of approach
+    target_pose_pickup.position.z = z + 0.15;//0.2;, input actual Z of object instead of approach
+    std::cout<<M_PI<<std::endl;
     tf::Quaternion qat_pick = tf::createQuaternionFromRPY(0, -M_PI, 0);
     qat_pick.normalize();
-    std::cout<<qat_pick<<std::endl;
     target_pose_pickup.orientation.x = qat_pick.x();//0.577;//0.49; // two-sided gribber
     target_pose_pickup.orientation.y = qat_pick.y();//0.577;//0.49; // two-sided gribber
     target_pose_pickup.orientation.z = qat_pick.z();//0.577;//0.49;
@@ -417,7 +422,9 @@ void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, dou
     moveit::planning_interface::MoveGroup::Plan my_plan;
     // bool success = group.plan(my_plan); MOVEIT_EDIT
     moveit::planning_interface::MoveItErrorCode success = group.plan(my_plan);
-    //compensate_slark(my_plan); //compensate the slark for 2nd motor
+    //compensate_slark
+    for (int i=0; i < my_plan.trajectory_.joint_trajectory.points.size(); i++)
+        my_plan.trajectory_.joint_trajectory.points[i].positions[3] += (0.3 * i / my_plan.trajectory_.joint_trajectory.points.size());
     // visualization
     ROS_INFO("Visualizing plan 1 (pose goal) %s",success?"":"FAILED");
     // execute
@@ -435,7 +442,7 @@ void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, dou
     *                          Open grabber                          *
     *****************************************************************/
     ROS_INFO("Open gripper");
-    openGrabber(pub_8, pub_9);
+    open_gripper_w_width(open_width, pub_8, pub_9);
 
     /****************************************************************
     *                Move down to pick up by jacobian               *
@@ -465,8 +472,10 @@ void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, dou
     const double jump_threshold = 0.0;
     const double eef_step = 0.025;
     double fraction = group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory_down);
-    for (int i=0; i < trajectory_down.joint_trajectory.points.size(); i++)
+    for (int i=0; i < trajectory_down.joint_trajectory.points.size(); i++){
         trajectory_down.joint_trajectory.points[i].positions[6] = trajectory_down.joint_trajectory.points[0].positions[6];
+        trajectory_down.joint_trajectory.points[i].positions[3] +=  (0.2 * i / trajectory_down.joint_trajectory.points.size());
+    }
 
     moveit::planning_interface::MoveGroup::Plan plan_down;
     plan_down.trajectory_ = trajectory_down;
@@ -476,7 +485,7 @@ void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, dou
     *                          Close grabber                         *
     *****************************************************************/
     ROS_INFO("Close gripper");
-    closeGrabber(pub_8, pub_9);
+    closeGrabber(open_width, pub_8, pub_9);
 
 
     /*****************************************************************
@@ -502,6 +511,9 @@ void grasp(moveit::planning_interface::MoveGroup &group, double x, double y, dou
     //group.setMaxVelocityScalingFactor(0.1);
     moveit_msgs::RobotTrajectory trajectory_up;
     fraction = group.computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory_up);
+    for (int i=0; i < trajectory_up.joint_trajectory.points.size(); i++){
+        trajectory_up.joint_trajectory.points[i].positions[3] +=  (0.3 * i / trajectory_up.joint_trajectory.points.size());
+    }
 
     moveit::planning_interface::MoveGroup::Plan plan_up;
     plan_up.trajectory_ = trajectory_up;
@@ -674,10 +686,19 @@ void getConstraint(moveit::planning_interface::MoveGroup &group, std::string tar
     }
 }
 
-void openGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9){
+void open_gripper_w_width(double width, ros::Publisher &pub_8, ros::Publisher &pub_9){
+    const double delta_x = 0.03;
+    double angle;
+    if (width > delta_x)
+        angle = -asin((width - delta_x) / (2 * 0.093));
+    else
+        angle = 0;
+
+    angle -= 0.05;
+
     std_msgs::Float64 val_8;
     std_msgs::Float64 val_9;
-    val_8.data = gripper_open_value;
+    val_8.data = angle;
     val_9.data = -gripper_open_value;
     pub_8.publish(val_8);
     pub_9.publish(val_9);
@@ -685,7 +706,7 @@ void openGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9){
 }
 
 double rotateGripper(ros::Publisher &pub_7, double angle) {
-	ROS_INFO("Rotate gripper");
+    ROS_INFO("Rotate gripper");
     std_msgs::Float64 val;
 
     val.data = current_joint_values[6] + angle;
@@ -694,15 +715,23 @@ double rotateGripper(ros::Publisher &pub_7, double angle) {
     sleep(2.0);
 }
 
-void closeGrabber(ros::Publisher &pub_8, ros::Publisher &pub_9) {
-	ROS_INFO("Close gripper");
+void closeGrabber(double open_width, ros::Publisher &pub_8, ros::Publisher &pub_9) {
+    ROS_INFO("Close gripper");
     std_msgs::Float64 val_8 ;
     std_msgs::Float64 val_9 ;
-    val_8.data = gripper_extreme_close_value; 
+
+    if (open_width <= 0.03)
+        val_8.data = gripper_extreme_close_value;
+    else if (open_width <= 0.05)
+        val_8.data = gripper_hard_close_value;
+    else if (open_width <= 0.07)
+        val_8.data = gripper_mild_close_value;
+    else
+        val_8.data = gripper_slight_close_value;    
+    
     val_9.data = -gripper_open_value;
     pub_8.publish(val_8);
     pub_9.publish(val_9);
 
     sleep(2.5);
 }
-
